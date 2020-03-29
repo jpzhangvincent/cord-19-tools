@@ -15,3 +15,7 @@ def get_abstracts(l: list) -> List[str]:
     return [_get_abstract(x) for x in l]
 
 
+def _get_paperid(d: dict) -> str:
+    l = d['paper_id']
+    out = '' if len(l) == 0 else l
+    return out

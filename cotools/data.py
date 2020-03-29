@@ -2,8 +2,9 @@ import json
 import os
 from urllib.request import urlopen
 import tarfile
+import pandas as pd
 from typing import Callable, List, Union
-from .text import _get_text, _get_abstract
+from .text import _get_text, _get_abstract, _get_paperid
 
 
 class Paperset:
@@ -48,6 +49,12 @@ class Paperset:
     def __len__(self) -> int:
         return len(self.dir_dict.keys())
 
+    def get_meta_data(self) -> pd.DataFrame:
+        paper_ids = self.apply(_get_paperid)
+        all_meta_data_df = pd.read_csv(f"{self.dir_dict}/meta_data.csv")
+        paper_meta_data_df = all_meta_data_df[all_meta_data_df.sha.isin(paper_ids)]
+        return paper_meta_data_df
+
 
 def search(ps: Paperset, txt: Union[str, List[str]]) -> List[dict]:
     if type(txt) is not list:
@@ -60,23 +67,32 @@ def download(dir: str='.') -> None:
         'comm_use_subset':"https://ai2-semanticscholar-cord-19.s3-us-west-2.amazonaws.com/2020-03-13/comm_use_subset.tar.gz",
         'noncomm_use_subset':"https://ai2-semanticscholar-cord-19.s3-us-west-2.amazonaws.com/2020-03-13/noncomm_use_subset.tar.gz",
         'pmc_custom_license':"https://ai2-semanticscholar-cord-19.s3-us-west-2.amazonaws.com/2020-03-13/pmc_custom_license.tar.gz",
-        'biorxiv_medrxiv':"https://ai2-semanticscholar-cord-19.s3-us-west-2.amazonaws.com/2020-03-13/biorxiv_medrxiv.tar.gz"
+        'biorxiv_medrxiv':"https://ai2-semanticscholar-cord-19.s3-us-west-2.amazonaws.com/2020-03-13/biorxiv_medrxiv.tar.gz",
+        'meta_data':"https://ai2-semanticscholar-cord-19.s3-us-west-2.amazonaws.com/2020-03-27/metadata.csv"
     }
     if not os.path.exists(dir):
         os.mkdir(dir)
     for d in data.keys():
         handle = urlopen(data[d])
-        with open(f"{dir}/{d}.tar.gz", 'wb') as out:
+        if d != 'meta_data':
+            file_path = f"{dir}/{d}.tar.gz"
+        else:
+            file_path = f"{dir}/{d}.csv"
+        with open(file_path, 'wb') as out:
             while True:
                 dat = handle.read(1024)
                 if len(dat) == 0: break
                 out.write(dat)
+
     for f in os.listdir(dir):
-        if tarfile.is_tarfile(f"{dir}/{f}"):
-            tar = tarfile.open(f"{dir}/{f}", 'r:gz')
-            tar.extractall(path=dir)
-            tar.close()
+        if os.path.isdir(f"{dir}/{f}"):
             os.remove(f"{dir}/{f}")
+        else:
+            if tarfile.is_tarfile(f"{dir}/{f}"):
+                tar = tarfile.open(f"{dir}/{f}", 'r:gz')
+                tar.extractall(path=dir)
+                tar.close()
+                os.remove(f"{dir}/{f}")
 
 
 
