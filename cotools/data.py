@@ -51,7 +51,7 @@ class Paperset:
 
     def get_meta_data(self) -> pd.DataFrame:
         paper_ids = self.apply(_get_paperid)
-        all_meta_data_df = pd.read_csv(f"{self.dir_dict}/meta_data.csv")
+        all_meta_data_df = pd.read_csv(f"{self.directory}/meta_data.csv")
         paper_meta_data_df = all_meta_data_df[all_meta_data_df.sha.isin(paper_ids)]
         return paper_meta_data_df
 
